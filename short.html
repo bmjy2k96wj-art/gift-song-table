@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GIFT SONG TABLE</title>
+  <style>
+    :root {
+      --gold: #f3ca72;
+      --gold-soft: #b9924d;
+      --ink: #17130d;
+      --panel: rgba(22, 19, 15, .92);
+      --line: rgba(243, 202, 114, .34);
+      --muted: #c7bda9;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; background: transparent; }
+    body {
+      color: #fff8e9;
+      font-family: "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+      overflow: hidden;
+    }
+    .overlay {
+      width: min(100%, 440px);
+      height: 100vh;
+      min-height: 320px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      filter: drop-shadow(0 8px 22px rgba(0,0,0,.4));
+    }
+    .heading {
+      flex: none;
+      text-align: center;
+      padding: 13px 16px 12px;
+      border: 1px solid var(--line);
+      border-radius: 15px 15px 5px 5px;
+      background: linear-gradient(135deg, rgba(42,33,20,.96), rgba(17,15,12,.96));
+    }
+    .eyebrow { color: var(--gold); font-size: 10px; font-weight: 800; letter-spacing: .28em; }
+    h1 { margin: 4px 0 0; color: #fff3d3; font-size: 21px; letter-spacing: .13em; }
+    .sub { margin-top: 4px; color: var(--muted); font-size: 10px; letter-spacing: .08em; }
+    .viewport {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      margin-top: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 5px 5px 14px 14px;
+      background: linear-gradient(180deg, rgba(24,21,17,.92), rgba(14,13,12,.92));
+      -webkit-mask-image: linear-gradient(to bottom, transparent, #000 3%, #000 97%, transparent);
+      mask-image: linear-gradient(to bottom, transparent, #000 3%, #000 97%, transparent);
+    }
+    .track { padding: 8px 9px; animation: scroll-list 68s linear infinite; will-change: transform; }
+    .viewport:hover .track, .viewport:focus-within .track, .viewport.is-paused .track { animation-play-state: paused; }
+    @keyframes scroll-list { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+    .gift-card {
+      display: grid;
+      grid-template-columns: 66px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 7px;
+      padding: 9px;
+      border: 1px solid rgba(243,202,114,.2);
+      border-radius: 10px;
+      background: linear-gradient(110deg, rgba(56,44,26,.78), rgba(25,22,18,.84));
+    }
+    .image-slot {
+      width: 66px; height: 66px;
+      display: grid; place-items: center;
+      overflow: visible;
+      border: 0;
+      border-radius: 50%;
+      color: #d9bd80;
+      background: transparent;
+      text-align: center;
+      font-size: 9px;
+      line-height: 1.35;
+    }
+    .image-slot img { display: block; width: 66px; height: 66px; object-fit: contain; object-position: center; }
+    .gift-name { color: #fff1cf; font-size: 14px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
+    .type { display: inline-block; margin-left: 4px; color: var(--gold); font-size: 10px; font-weight: 650; }
+    .song { margin-top: 6px; color: #fffaf0; font-size: 11px; line-height: 1.5; }
+    .song strong { color: var(--gold); font-weight: 700; }
+    .footer { flex: none; padding: 7px 3px 0; text-align: center; color: rgba(255,243,211,.72); font-size: 9px; letter-spacing: .04em; }
+    @media (max-width: 360px) {
+      .overlay { padding: 8px; }
+      .gift-card { grid-template-columns: 56px minmax(0,1fr); gap: 7px; padding: 7px; }
+      .image-slot, .image-slot img { width: 56px; height: 56px; }
+      .gift-name { font-size: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .track { animation-duration: 120s; } }
+  </style>
+</head>
+<body>
+  <main class="overlay" aria-label="ギフト演奏対応表">
+    <header class="heading">
+      <div class="eyebrow">LIVE GIFT REWARDS</div>
+      <h1>ギフト演奏対応表</h1>
+      <div class="sub">ショート曲のギフト演奏対応</div>
+    </header>
+    <section class="viewport" id="listViewport" aria-label="ギフト一覧（触れるとスクロールを一時停止）">
+      <div class="track" id="giftTrack"></div>
+    </section>
+    <div class="footer">カーソルを重ねるとスクロールを一時停止</div>
+  </main>
+  <script>
+    // ギフト画像はユーザー提供のTikTok CDN URLを使います。
+const giftIcons = {"エネルギーカプセル":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ae6e7024207fb82bab2c9b78405796a2.png~tplv-obj.webp","魔除けランタン":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/2d49630ebd574db497a26dd20562ff7e.png~tplv-obj.webp","ホットココア":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9a0ae13b71859d1e4be7f222d12ec6be.png~tplv-obj.webp","花束":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/b158b8493b51a3f30c59710c39d1dc96~tplv-obj.webp","ドーナッツ":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4e7ad6bdf0a1d860c538f38026d4e812~tplv-obj.webp"};
+    const gifts = [
+      { name: "花束", song: "千本桜", order: 100 },
+      { name: "エネルギーカプセル", song: "life force", order: 30 },
+      { name: "ホットココア", song: "god knows...", order: 30 },
+      { name: "ドーナッツ", song: "会心の一撃", order: 30 },
+      { name: "魔除けランタン", song: "ロストワンの号哭", order: 9999 }
+    ];
+    const track = document.getElementById("giftTrack");
+    const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    function card(gift) {
+      const songs = gift.songs ? gift.songs.join(" ／ ") : gift.song;
+      const icon = giftIcons[gift.name];
+      return `<article class="gift-card">
+        <div class="image-slot" aria-label="ギフト画像"><img src="${icon}" alt="${escapeHTML(gift.name)}"></div>
+        <div>
+          <div class="gift-name">${escapeHTML(gift.name)}${gift.type ? ` <span class="type">${escapeHTML(gift.type)}</span>` : ""}</div>
+          <div class="song">${gift.songs ? "<strong>ランダム候補：</strong>" : "<strong>演奏曲：</strong>"}${escapeHTML(songs)}</div>
+        </div>
+      </article>`;
+    }
+    const content = gifts.sort((a, b) => b.order - a.order).map(card).join("");
+    track.innerHTML = content + content;
+    const viewport = document.getElementById("listViewport");
+    viewport.addEventListener("touchstart", () => viewport.classList.add("is-paused"), { passive: true });
+    viewport.addEventListener("touchend", () => viewport.classList.remove("is-paused"), { passive: true });
+  </script>
+</body>
+</html>
