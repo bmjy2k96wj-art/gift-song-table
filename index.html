@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GIFT SONG TABLE</title>
+  <style>
+    :root {
+      --gold: #f3ca72;
+      --gold-soft: #b9924d;
+      --ink: #17130d;
+      --panel: rgba(22, 19, 15, .92);
+      --line: rgba(243, 202, 114, .34);
+      --muted: #c7bda9;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; background: transparent; }
+    body {
+      color: #fff8e9;
+      font-family: "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+      overflow: hidden;
+    }
+    .overlay {
+      width: min(100%, 440px);
+      height: 100vh;
+      min-height: 320px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      filter: drop-shadow(0 8px 22px rgba(0,0,0,.4));
+    }
+    .heading {
+      flex: none;
+      text-align: center;
+      padding: 13px 16px 12px;
+      border: 1px solid var(--line);
+      border-radius: 15px 15px 5px 5px;
+      background: linear-gradient(135deg, rgba(42,33,20,.96), rgba(17,15,12,.96));
+    }
+    .eyebrow { color: var(--gold); font-size: 10px; font-weight: 800; letter-spacing: .28em; }
+    h1 { margin: 4px 0 0; color: #fff3d3; font-size: 21px; letter-spacing: .13em; }
+    .sub { margin-top: 4px; color: var(--muted); font-size: 10px; letter-spacing: .08em; }
+    .viewport {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      margin-top: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 5px 5px 14px 14px;
+      background: linear-gradient(180deg, rgba(24,21,17,.92), rgba(14,13,12,.92));
+      -webkit-mask-image: linear-gradient(to bottom, transparent, #000 3%, #000 97%, transparent);
+      mask-image: linear-gradient(to bottom, transparent, #000 3%, #000 97%, transparent);
+    }
+    .track { padding: 8px 9px; animation: scroll-list 68s linear infinite; will-change: transform; }
+    .viewport:hover .track, .viewport:focus-within .track, .viewport.is-paused .track { animation-play-state: paused; }
+    @keyframes scroll-list { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+    .gift-card {
+      display: grid;
+      grid-template-columns: 66px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 7px;
+      padding: 9px;
+      border: 1px solid rgba(243,202,114,.2);
+      border-radius: 10px;
+      background: linear-gradient(110deg, rgba(56,44,26,.78), rgba(25,22,18,.84));
+    }
+    .image-slot {
+      width: 66px; height: 66px;
+      display: grid; place-items: center;
+      overflow: visible;
+      border: 0;
+      border-radius: 50%;
+      color: #d9bd80;
+      background: transparent;
+      text-align: center;
+      font-size: 9px;
+      line-height: 1.35;
+    }
+    .image-slot img { display: block; width: 66px; height: 66px; object-fit: contain; object-position: center; }
+    .gift-name { color: #fff1cf; font-size: 14px; line-height: 1.35; font-weight: 750; overflow-wrap: anywhere; }
+    .type { display: inline-block; margin-left: 4px; color: var(--gold); font-size: 10px; font-weight: 650; }
+    .song { margin-top: 6px; color: #fffaf0; font-size: 11px; line-height: 1.5; }
+    .song strong { color: var(--gold); font-weight: 700; }
+    .footer { flex: none; padding: 7px 3px 0; text-align: center; color: rgba(255,243,211,.72); font-size: 9px; letter-spacing: .04em; }
+    @media (max-width: 360px) {
+      .overlay { padding: 8px; }
+      .gift-card { grid-template-columns: 56px minmax(0,1fr); gap: 7px; padding: 7px; }
+      .image-slot, .image-slot img { width: 56px; height: 56px; }
+      .gift-name { font-size: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .track { animation-duration: 120s; } }
+  </style>
+</head>
+<body>
+  <main class="overlay" aria-label="ギフト演奏対応表">
+    <header class="heading">
+      <div class="eyebrow">LIVE GIFT REWARDS</div>
+      <h1>ギフト演奏対応表</h1>
+      <div class="sub">フル曲のギフト演奏対応</div>
+    </header>
+    <section class="viewport" id="listViewport" aria-label="ギフト一覧（触れるとスクロールを一時停止）">
+      <div class="track" id="giftTrack"></div>
+    </section>
+    <div class="footer">カーソルを重ねるとスクロールを一時停止</div>
+  </main>
+  <script>
+    // ギフト画像はユーザー提供のTikTok CDN URLを使います。
+const giftIcons = {"スマートビーンのセージ":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/ed2cc456ab1a8619c5093eb8cfd3d303.png~tplv-obj.webp","バラのビーンのロージー":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/3cbaea405cc61e8eaab6f5a14d127511.png~tplv-obj.webp","永遠のローザ":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/863e7947bc793f694acbe970d70440a1.png~tplv-obj.webp","楽しいビーンのジョリー":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/0e3769575f5b7b27b67c6330376961a4.png~tplv-obj.webp","ロージーのサックス":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/9e9ccba3ad69fb79462faad2d4bab4a5.png~tplv-obj.webp","子犬のキス":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/4ae998a21159b60484169864f8968ba9.png~tplv-obj.webp","コーギー":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/148eef0884fdb12058d1c6897d1e02b9~tplv-obj.webp","進撃グローブ":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9f8bd92363c400c284179f6719b6ba9c~tplv-obj.webp","団結":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/e15e7e7363020afa4fba28e81cf69dde.png~tplv-obj.webp","リズムボット":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/ab9626d3236e46633b67883c5aa1b7b9.png~tplv-obj.webp","愛してる":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/134e51c00f46e01976399883ca4e4798~tplv-obj.webp","ハート":"https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/934b5a10dee8376df5870a61d2ea5cb6.png~tplv-obj.webp","ハートポーズ":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/374dfe46d5b09ce1db19be06202d34f5.png~tplv-obj.webp","折り鶴":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/0f158a08f7886189cdabf496e8a07c21~tplv-obj.webp","歌うキノコ":"https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/072a4e4c2f4435282354492360e16571.png~tplv-obj.webp"};
+    const gifts = [
+      { name: "スマートビーンのセージ", song: "Only my railgunフル", order: 399 },
+      { name: "バラのビーンのロージー", song: "LEVEL5-judgelight-フル", order: 399 },
+      { name: "永遠のローザ", song: "千本桜フル", order: 399 },
+      { name: "楽しいビーンのジョリー", song: "God knows...フル", order: 399 },
+      { name: "ロージーのサックス", song: "空想列車フル", order: 399 },
+      { name: "子犬のキス", song: "失敗作少女フル", order: 299 },
+      { name: "コーギー", song: "テトリスフル", order: 299 },
+      { name: "進撃グローブ", song: "星座になれたらフル", order: 299 },
+      { name: "団結", song: "忘れてやらないフル", order: 299 },
+      { name: "リズムボット", song: "夜もすがら君想ふフル", order: 199 },
+      { name: "愛してる", song: "天ノ弱フル", order: 199 },
+      { name: "ハート", song: "GO!GO!MANIACフル", order: 199 },
+      { name: "ハートポーズ", song: "swimフル", order: 100 },
+      { name: "折り鶴", song: "ふわふわ時間フル", order: 99 },
+      { name: "歌うキノコ", song: "ロストワンの号哭フル", order: 99 }
+    ];
+    const track = document.getElementById("giftTrack");
+    const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    function card(gift) {
+      const songs = gift.songs ? gift.songs.join(" ／ ") : gift.song;
+      const icon = giftIcons[gift.name];
+      return `<article class="gift-card">
+        <div class="image-slot" aria-label="ギフト画像"><img src="${icon}" alt="${escapeHTML(gift.name)}"></div>
+        <div>
+          <div class="gift-name">${escapeHTML(gift.name)}${gift.type ? ` <span class="type">${escapeHTML(gift.type)}</span>` : ""}</div>
+          <div class="song">${gift.songs ? "<strong>ランダム候補：</strong>" : "<strong>演奏曲：</strong>"}${escapeHTML(songs)}</div>
+        </div>
+      </article>`;
+    }
+    const content = gifts.sort((a, b) => b.order - a.order).map(card).join("");
+    track.innerHTML = content + content;
+    const viewport = document.getElementById("listViewport");
+    viewport.addEventListener("touchstart", () => viewport.classList.add("is-paused"), { passive: true });
+    viewport.addEventListener("touchend", () => viewport.classList.remove("is-paused"), { passive: true });
+  </script>
+</body>
+</html>
